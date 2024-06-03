@@ -34,7 +34,7 @@ namespace dbg
 	/**
 	 * @brief Name of the debug section.
 	 */
-	#define DBG_SECTION_NAME  "DBG"
+	#define DBG_SECTION_NAME  "INFO"
 
 	/**
 	 * @brief Macro to print the debug log header with the specified level name and color.
@@ -109,21 +109,21 @@ namespace dbg
 	/**
 	 * @brief Debug level for error messages.
 	 */
-	#define DBG_ERROR           0
-	#define DBG_WARNING         1
-	#define DBG_INFO            2
-	#define DBG_LOG             3
+	#define ERROR           0
+	#define WARNING         1
+	#define INFO            2
+	#define LOG             3
 	/**
 	 * @brief Default debug level.
 	 */
 	#ifndef DBG_LEVEL
-	#define DBG_LEVEL         DBG_INFO
+	#define DBG_LEVEL         INFO
 	#endif
 
 	/**
 	 * @brief Macro to print a debug log line with the specified format and arguments, only if the debug level is set to DBG_LOG or higher.
 	 */
-	#if (DBG_LEVEL >= DBG_LOG)
+	#if (DBG_LEVEL >= LOG)
 	#define LOG_D(fmt, ...)      dbg_log_line(true,"D", 0, fmt, ##__VA_ARGS__)
 	#define log_d(fmt, ...)      dbg_log_line(false, "D", 0, fmt, ##__VA_ARGS__)
 	#else
@@ -134,7 +134,7 @@ namespace dbg
 	/**
 	 * @brief Macro to print an informational log line with the specified format and arguments, only if the debug level is set to DBG_INFO or higher.
 	 */
-	#if (DBG_LEVEL >= DBG_INFO)
+	#if (DBG_LEVEL >= INFO)
 	#define LOG_I(fmt, ...)      dbg_log_line(true,"I", 32, fmt, ##__VA_ARGS__)
 	#define log_i(fmt, ...)      dbg_log_line(false,"I", 32, fmt, ##__VA_ARGS__)
 	#else
@@ -145,7 +145,7 @@ namespace dbg
 	/**
 	 * @brief Macro to print a warning log line with the specified format and arguments, only if the debug level is set to DBG_WARNING or higher.
 	 */
-	#if (DBG_LEVEL >= DBG_WARNING)
+	#if (DBG_LEVEL >= WARNING)
 	#define LOG_W(fmt, ...)      dbg_log_line(true,"W", 33, fmt, ##__VA_ARGS__)
 	#define log_w(fmt, ...)      dbg_log_line(false,"W", 33, fmt, ##__VA_ARGS__)
 	#else
@@ -156,7 +156,7 @@ namespace dbg
 	/**
 	 * @brief Macro to print an error log line with the specified format and arguments, only if the debug level is set to DBG_ERROR or higher.
 	 */
-	#if (DBG_LEVEL >= DBG_ERROR)
+	#if (DBG_LEVEL >= ERROR)
 	#define LOG_E(fmt, ...)      dbg_log_line(true,"E", 31, fmt, ##__VA_ARGS__)
 	#define log_e(fmt, ...)      dbg_log_line(false,"E", 31, fmt, ##__VA_ARGS__)
 	#define LOG_E_LOC(fmt, ...)  do {LOG_E("%s:%d:[%s]=> " fmt "\r\n", FILENAME, __LINE__, __func__, ##__VA_ARGS__);} while(0)

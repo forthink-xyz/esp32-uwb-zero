@@ -22,7 +22,6 @@
 #include "logger.h"
 #include <Adafruit_GFX.h>    // Core graphics library
 #include <Adafruit_ST7789.h> // Hardware-specific library for ST7789
-#include "NearByInteraction.h"
 #include "EEPROM.h"
 
 
@@ -61,7 +60,7 @@ using namespace std;
 #define NUS_CHARACTERISTIC_UUID_TX "6E400003-B5A3-F393-E0A9-E50E24DCCA9E"
 
 static uint16_t                       gself_mac = 0x0000;// it will be set in the uwb_init function, any value is ok except 0x0000, we set it to uid for test later
-static uint8_t                        grole      = NODE_RESPONDER;// in this example, we set the role as responder,iPhone as initiator
+static NodeRole                       grole     = NodeRole::RESPONDER;//node role, default is responder, it will be set in the role_init function, use the ROLE_SW_PIN to determine the node role
 
 static const int                      spiClk     = 10*1000*1000;
 static UWBHALClass                    *uwb       = NULL;//uwb object pointer
@@ -91,7 +90,7 @@ class BleServerCallbacks: public BLEServerCallbacks {
         LOG_I("Device connected! ");
     }
     void onDisconnect(BLEServer* pServer) {
-        nearbyobj->set_oob_phase((uint8_t)NINearbyMessageId::phone_uwb_stop_cmd);
+        nearbyobj->set_oob_phone_uwb_stop_phase();
         delay(500); // give the bluetooth stack the chance to get things ready
         LOG_W("Device disconnected! advertising...");
         pServer->startAdvertising(); 
@@ -179,7 +178,7 @@ void lcd_fsm(std::map<uint64_t, uint16_t> dismap, bool header_refresh){
     dx = 1, dy = 1;
     tft->fillScreen(TFT_BACK_COLOR);
     tft_drawtext(dx , dy, (char*)String("Example :Apple NI").c_str(), font_size, ST77XX_BLUE);  dy += dy_step;
-    tft_drawtext(dx , dy, (char*)(grole == NODE_INITATOR ? "Role    :Initator" : "Role    :Responder"), font_size, ST77XX_BLUE);   dy += dy_step;
+    tft_drawtext(dx , dy, (char*)(grole == NodeRole::INITATOR ? "Role    :Initator" : "Role    :Responder"), font_size, ST77XX_BLUE);   dy += dy_step;
     tft_drawtext(dx , dy, (char*)(String("self mac:" ) + String(gself_mac, 16)).c_str(), font_size, ST77XX_BLUE);   dy += dy_step;
   }
 
@@ -386,10 +385,10 @@ void uwb_init(void){
  * an error loop.
  */
 void ni_start(){
-  if(nearbyobj == NULL) nearbyobj = new NearByClass(NODE_RESPONDER, gself_mac, ni_oob_tx_callback);
+  if(nearbyobj == NULL) nearbyobj = new NearByClass(NodeRole::RESPONDER, gself_mac, ni_oob_tx_callback);
 
   uint8_t cnt = 0;
-  while (nearbyobj->get_oob_phase() != (uint8_t)NINearbyMessageId::phone_uwb_cfg_and_start_cmd) {
+  while (nearbyobj->is_oob_phone_uwb_start_phase() == false){
     // 2 minutes timeout default, the value is depend on uwb module lib
     if((++cnt)%60 == 0){
       LOG_W("Waiting the configuration data from iPhone time out, timeout = 1 minutes, reset the uwb device.");
@@ -406,9 +405,11 @@ void ni_start(){
     }
   }
 
-  NINearbyShareableData_t PhoneShareableData = nearbyobj->get_shareable_data();
+  // NINearbyShareableData_t PhoneShareableData = nearbyobj->get_shareable_data();
   //Sequence of ni configuration
   bool sta = true;
+
+  uint16_t dest_mac = nearbyobj->get_shareable_dest_address();
 
   sta &= uwb->range_set_session_role(grole);
 
@@ -416,27 +417,27 @@ void ni_start(){
 
   sta &= uwb->range_set_session_self_mac((uint8_t*)&gself_mac, sizeof(gself_mac)/sizeof(uint8_t));
 
-  sta &= uwb->range_set_session_preamble_code_index(PhoneShareableData->preamble_core_index);
+  sta &= uwb->range_set_session_preamble_code_index(nearbyobj->get_shareable_code_index());
 
-  sta &= uwb->range_set_session_channel_number(PhoneShareableData->channel_number);
+  sta &= uwb->range_set_session_channel_number(nearbyobj->get_shareable_channel_number());  
 
-  sta &= uwb->range_set_session_slots_per_rr((uint8_t)PhoneShareableData->slots_per_rr);
+  sta &= uwb->range_set_session_slots_per_rr(nearbyobj->get_shareable_slots_per_rr());
 
-  sta &= uwb->range_set_session_slot_duration(PhoneShareableData->slot_duration);
+  sta &= uwb->range_set_session_slot_duration(nearbyobj->get_shareable_slot_duration());
 
-  sta &= uwb->range_set_session_ranging_interval(PhoneShareableData->ranging_interval);
+  sta &= uwb->range_set_session_ranging_interval(nearbyobj->get_shareable_ranging_interval());
 
-  sta &= uwb->range_set_session_ranging_round_control(PhoneShareableData->ranging_round_control);
+  sta &= uwb->range_set_session_ranging_round_control(nearbyobj->get_shareable_ranging_round_control());
 
-  sta &= uwb->range_set_session_sts_init_iv(PhoneShareableData->sts_init_iv);
+  sta &= uwb->range_set_session_sts_init_iv(nearbyobj->get_shareable_sts_init_iv());
 
-  sta &= uwb->range_set_session_multi_node(0x00);
+  sta &= uwb->range_set_session_multi_node(nearbyobj->get_shareable_multi_node());
 
-  sta &= uwb->range_set_session_vendor_id(0x004c);
+  sta &= uwb->range_set_session_vendor_id(nearbyobj->get_shareable_vendor_id());
 
-  sta &= uwb->range_set_session_dest_mac_list((uint8_t*)(&PhoneShareableData->dest_address), sizeof(PhoneShareableData->dest_address)/sizeof(uint8_t));
+  sta &= uwb->range_set_session_dest_mac_list((uint8_t*)(&dest_mac), 2);
 
-  sta &= uwb->configuration_commit(FIRA_SESSION, PhoneShareableData->session_id);
+  sta &= uwb->configuration_commit(SessionType::FIRA, nearbyobj->get_shareable_session_id());
 
   if(false == sta){
     while(true){
@@ -444,7 +445,7 @@ void ni_start(){
       delay(1000);
     }
   }
-  uwb->range_set_session_start(PhoneShareableData->session_id);
+  uwb->range_set_session_start(nearbyobj->get_shareable_session_id());
 }
 
 /**
@@ -478,8 +479,9 @@ void ble_init(char* name){
   // Start the service
   nusService->start();
 
-  // Start advertising
+  //add the service UUID to the advertising data
   pServer->getAdvertising()->addServiceUUID(NUS_SERVICE_UUID);
+  // Start advertising
   pServer->getAdvertising()->start();
 
 }
@@ -527,7 +529,7 @@ void loop() {
   // //listen data from uwb device, including range data, status, etc.
   uwb->ntf_listening();
 
-  uint16_t phoneMac = nearbyobj->get_phone_mac();
+  uint16_t phoneMac = nearbyobj->get_shareable_dest_address();
   if(true == uwb->get_range_status(phoneMac)){
     if(true == uwb->get_range_distance(phoneMac, &distance)){
       dismap[phoneMac] = distance;
@@ -535,9 +537,9 @@ void loop() {
     }
   }
   else{
-      if(((++err_cnt)%20 == 0) && (nearbyobj->get_oob_phase() == (uint8_t)NINearbyMessageId::phone_uwb_stop_cmd)){
+      if(((++err_cnt)%20 == 0) && (nearbyobj->is_oob_phone_uwb_stop_phase() == true)){
          dismap.clear();
-         while (nearbyobj->get_oob_phase() != (uint8_t)NINearbyMessageId::phone_uwb_cfg_and_start_cmd) {
+         while (nearbyobj->is_oob_phone_uwb_start_phase() == false){
             LOG_W("Connection lost, Waiting for the configuration from iPhone, code = 0x%02x", (uint8_t)nearbyobj->get_oob_phase());
             delay(1000);
         }
@@ -548,8 +550,5 @@ void loop() {
         lcd_fsm(dismap, true);
       }
   }
-
-  LOG_W("Get range status from iPhone 0x%04x, code = 0x%02x",phoneMac,  (uint8_t)nearbyobj->get_oob_phase());
-
   led_fsm();
 }

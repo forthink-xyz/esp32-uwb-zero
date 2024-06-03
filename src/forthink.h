@@ -33,10 +33,10 @@
  * - `NODE_INITATOR`: Represents the initiator node.
  * - `NODE_RESPONDER`: Represents the responder node.
  */
-enum{
-    NODE_INITATOR = 0x01,
-    NODE_RESPONDER = 0x00,
-}NODE_ROLE;
+enum class NodeRole{
+    INITATOR  = 0x01,
+    RESPONDER = 0x00,
+};
 
 /**
  * @brief Enumeration representing different session types.
@@ -44,10 +44,11 @@ enum{
  * This enumeration is used to define different session types in the Forthink library.
  * The available session types are CCC_SESSION and FIRA_SESSION.
  */
-enum{
-    CCC_SESSION  = (1<<0),
-    FIRA_SESSION = (1<<1)
-}SESSION_TYPE;
+enum class SessionType{
+    CCC  = 0xA0,
+    FIRA = 0x00
+};
+
 
 
 namespace ftlib{
@@ -78,8 +79,20 @@ class UWBHALClass{
 
             void begin(IN int8_t prst, IN int8_t cs, IN int8_t pint, IN int8_t prdy);
 
+            /**
+             * @brief Resets the hardware.
+             * 
+             * This function performs a hardware reset.
+             * 
+             * @return void
+             */
             void hardware_reset(void);
 
+            /**
+             * @brief Retrieves the unique identifier of the device.
+             * 
+             * @return A pointer to a character array containing the device's unique identifier.
+             */
             char* dev_get_uid(void);
 
             /**
@@ -100,7 +113,7 @@ class UWBHALClass{
              * @param session_type The session type for which the default parameter needs to be set: CCC_SESSION or FIRA_SESSION.
              * @return True if the default session parameter was successfully set, false otherwise.
              */
-            bool range_set_session_param_default(IN int8_t session_type);
+            bool range_set_session_param_default(IN SessionType session_type);
 
             /**
              * Sets the session preamble code index for the range.
@@ -233,7 +246,7 @@ class UWBHALClass{
              * @param role The session role to be set. This should be a valid uint8_t value.
              * @return True if the session role was set successfully, false otherwise.
              */
-            bool range_set_session_role(IN uint8_t role);
+            bool range_set_session_role(IN NodeRole role);
 
             /**
              * Sets the session number responder for the range.
@@ -260,7 +273,7 @@ class UWBHALClass{
              * @param session_id The ID of the session.
              * @return true if the session restart was successfully set, false otherwise.
              */
-            bool range_set_session_restart(IN int8_t session_type, IN uint32_t session_id);
+            bool range_set_session_restart(IN SessionType session_type, IN uint32_t session_id);
 
             /**
              * Enables or disables the transmission log for the session range.
@@ -332,7 +345,7 @@ class UWBHALClass{
              * @param session_id The ID of the session.
              * @return True if the configuration changes were successfully committed, false otherwise.
              */
-            bool configuration_commit(IN int8_t session_type, IN uint32_t session_id);
+            bool configuration_commit(IN SessionType session_type, IN uint32_t session_id);
 
             /**
              * listen for the notification from the device.
@@ -367,19 +380,182 @@ enum class NINearbyMessageId;
  */
 class NearByClass{
 public:
-    NearByClass(uint8_t devrole , uint16_t devmac, void (*oob_tx_cb)(uint8_t *data, uint8_t len));
+    NearByClass(NodeRole devrole , uint16_t devmac, void (*oob_tx_cb)(uint8_t *data, uint8_t len));
     ~NearByClass();
+
+    /**
+     * @brief Handles the received stream of data.
+     *
+     * This function is responsible for processing the received stream of data.
+     * It takes a String parameter `rx_stream` which represents the received stream.
+     * 
+     * @param rx_stream The received stream of data to be processed.
+     */
+    void  handle_rx_stream(String rx_stream);
+
+    /**
+     * @brief Retrieves the index of the shareable code.
+     * 
+     * This function returns the index of the shareable code.
+     * 
+     * @return The index of the shareable code.
+     */
+    uint8_t get_shareable_code_index();
+
+    /**
+     * @brief Retrieves the shareable channel number.
+     * 
+     * This function returns the shareable channel number as a uint8_t value.
+     * The shareable channel number is used for communication purposes.
+     * 
+     * @return The shareable channel number.
+     */
+    uint8_t get_shareable_channel_number();
+
+    /**
+     * Retrieves the number of shareable slots per round-robin.
+     *
+     * @return The number of shareable slots per round-robin.
+     */
+    uint8_t get_shareable_slots_per_rr();
+
+    /**
+     * Retrieves the duration of a shareable slot.
+     *
+     * @return The duration of a shareable slot in milliseconds.
+     */
+    uint16_t get_shareable_slot_duration();
+
+    /**
+     * Retrieves the shareable ranging interval.
+     *
+     * @return The shareable ranging interval as a 16-bit unsigned integer.
+     */
+    uint16_t get_shareable_ranging_interval();
+
+    /**
+     * @brief Retrieves the shareable ranging round control value.
+     *
+     * This function returns the shareable ranging round control value, which is a uint8_t.
+     * The shareable ranging round control value determines the behavior of the ranging round.
+     *
+     * @return The shareable ranging round control value.
+     */
+    uint8_t get_shareable_ranging_round_control();
+
+    /**
+     * @brief Retrieves the shareable initialization vector (IV) for the sts_init function.
+     * 
+     * @return A pointer to the shareable initialization vector.
+     */
+    uint8_t* get_shareable_sts_init_iv();
+
+    /**
+     * @brief Retrieves the shareable multi-node value.
+     * 
+     * This function returns the shareable multi-node value as a uint8_t.
+     * 
+     * @return The shareable multi-node value.
+     */
+    uint8_t get_shareable_multi_node();
+
+    /**
+     * @brief Retrieves the shareable vendor ID.
+     *
+     * This function returns the shareable vendor ID as a 16-bit unsigned integer.
+     *
+     * @return The shareable vendor ID.
+     */
+    uint16_t get_shareable_vendor_id();
+
+    /**
+     * @brief Retrieves the shareable destination address.
+     *
+     * This function returns the shareable destination address as a 16-bit unsigned integer.
+     *
+     * @return The shareable destination address.
+     */
+    uint16_t get_shareable_dest_address();
+
+    /**
+     * @brief Retrieves the shareable session ID.
+     *
+     * This function returns a 16-bit unsigned integer representing the shareable session ID.
+     *
+     * @return The shareable session ID.
+     */
+    uint16_t get_shareable_session_id();
+
+    /**
+     * @brief Retrieves the out-of-band phase.
+     * 
+     * This function returns the out-of-band phase as a uint8_t value.
+     * 
+     * @return The out-of-band phase as a uint8_t value.
+     */
     uint8_t  get_oob_phase();
-    uint16_t get_phone_mac();
-    void     handle_rx_stream(String rx_stream);
-    void    set_oob_phase(uint8_t phase);
-    NINearbyShareableData_t get_shareable_data();
+
+    /**
+     * Sets the out-of-band (OOB) phone UWB stop phase.
+     * 
+     * This function is responsible for setting the UWB stop phase for the out-of-band (OOB) phone.
+     * 
+     * @return true if the UWB stop phase was successfully set, false otherwise.
+     */
+    bool set_oob_phone_uwb_stop_phase();
+
+    /**
+     * Checks if the out-of-band (OOB) phone UWB initialization phase is ongoing.
+     *
+     * @return true if the OOB phone UWB initialization phase is ongoing, false otherwise.
+     */
+    bool is_oob_phone_uwb_init_phase();
+
+    /**
+     * Checks if the out-of-band (OOB) phone UWB start phase is active.
+     * 
+     * @return true if the OOB phone UWB start phase is active, false otherwise.
+     */
+    bool is_oob_phone_uwb_start_phase();
+
+    /**
+     * Checks if the OOB phone UWB stop phase is active.
+     *
+     * @return true if the OOB phone UWB stop phase is active, false otherwise.
+     */
+    bool is_oob_phone_uwb_stop_phase();
+
 private:
-    uint8_t  dev_role;
-    uint16_t dev_mac;
+    NodeRole  dev_role;
+    uint16_t  dev_mac;
+    /**
+     * Sets the out-of-band (OOB) phase.
+     *
+     * This function sets the out-of-band phase to the specified value.
+     *
+     * @param phase The value of the out-of-band phase to set.
+     */
+    void      set_oob_phase(uint8_t phase);
+    /**
+     * @brief Function pointer for out-of-band transmission.
+     *
+     * This function pointer is used to transmit data out-of-band.
+     * It takes a pointer to the data and the length of the data as parameters.
+     *
+     * @param data Pointer to the data to be transmitted.
+     * @param len Length of the data.
+     */
+    void      (*oob_tx)(uint8_t *data, uint8_t len);
+
+    /**
+     * @brief Represents the identifier for a nearby message.
+     * 
+     * This class is used to uniquely identify a nearby message in the Forthink library.
+     * It is typically used in conjunction with other classes and functions to perform
+     * operations related to nearby messages.
+     */
     NINearbyMessageId oobConfiguredPhase;
-    void (*oob_tx)(uint8_t *data, uint8_t len);
-    NINearbyShareableData_t  ni_shareable_data_from_phone = NULL;
+    NINearbyShareableData_t  shareable_data_from_phone = NULL;
 };
 
 #endif

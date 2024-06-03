@@ -62,7 +62,7 @@ static const uint16_t MAC_INITOR   = 0xabcd;//set initator mac address to same v
 
 static uint16_t                    gself_mac  = 0x0000;    // it will be set in the "uwb_init' function, any value is ok except '0x0000', we set it to 'uid' here for test later
 static uint64_t                    gsession_id = 0x87654321;//session id for range session, it's would be better to use a random number, here we use a fixed number for test
-static uint8_t                     grole       = NODE_RESPONDER;//node role, default is responder, it will be set in the role_init function, use the ROLE_SW_PIN to determine the node role
+static NodeRole                    grole       = NodeRole::RESPONDER;//node role, default is responder, it will be set in the role_init function, use the ROLE_SW_PIN to determine the node role
 static const int                   spiClk      = 10*1000*1000;
 
 static EspMQTTClient               *mclient    = NULL;//mqtt client object pointer
@@ -169,8 +169,8 @@ void role_init(void){
   //default low，   role to respondor,
   //if pull high,   set node to initator
   uint8_t state = digitalRead(ROLE_SW_PIN);
-  grole = (state == HIGH) ? NODE_INITATOR : NODE_RESPONDER;
-  const char* pinfo = (grole == NODE_INITATOR) ? "Initator":"Responder";
+  grole = (state == HIGH) ? NodeRole::INITATOR : NodeRole::RESPONDER;
+  const char* pinfo = (grole == NodeRole::INITATOR) ? "Initator":"Responder";
   LOG_I("set node role to [%s]", pinfo);
 }
 
@@ -321,7 +321,7 @@ void uwb_init(void){
   //Use the node role to determine the mac address
   //Self mac address is the last two bytes of the self uid while dest mac address is the last two bytes of the dest nodes uid which you know in advance
   //Here we set the dest mac address hard coded manually for test
-  String info = (grole == NODE_INITATOR) ? "node role:initator" : "node role:responder";
+  String info = (grole == NodeRole::INITATOR) ? "node role:initator" : "node role:responder";
   tft_drawtext(dx , dy, (char*)info.c_str(), font_size);dy += dy_step;
 
   // get the last two bytes of the uid as the self mac address
@@ -335,12 +335,12 @@ void uwb_init(void){
   bool sta = true;
   sta &= uwb->range_set_session_role(grole);
   //a responder role in ccc mode, parameter 'index of responder' have to be configured mauanlly, index range from 0 ot N, where N is the number of the responder nodes
-  if(grole == NODE_RESPONDER){
+  if(grole == NodeRole::RESPONDER){
     sta &= uwb->range_set_session_index_responder(REPONDER_INDEX); //increment the index '1' for each responder node
   }
   sta &= uwb->range_set_session_num_responder(REPONDER_NUM); //let initator know and responder know how many responder nodes in the network, set it to 3 for test
-  sta &= uwb->range_set_session_param_default(CCC_SESSION);
-  sta &= uwb->configuration_commit(CCC_SESSION, gsession_id);
+  sta &= uwb->range_set_session_param_default(SessionType::CCC);
+  sta &= uwb->configuration_commit(SessionType::CCC, gsession_id);
 
   if(false == sta){
     while(true){
@@ -424,7 +424,7 @@ void lcd_fsm(std::map<uint64_t, uint16_t> dismap){
   if(fisrt_entry){
     tft->fillScreen(TFT_BACK_COLOR);
     tft_drawtext(dx , dy, (char*)String("Example :CCC Car key").c_str(), font_size, ST77XX_BLUE);  dy += dy_step;
-    tft_drawtext(dx , dy, (char*)(grole == NODE_INITATOR ? "Role    :Initator" : "Role    :Responder"), font_size, ST77XX_BLUE);   dy += dy_step;
+    tft_drawtext(dx , dy, (char*)(grole == NodeRole::INITATOR ? "Role    :Initator" : "Role    :Responder"), font_size, ST77XX_BLUE);   dy += dy_step;
     tft_drawtext(dx , dy, (char*)(String("Self mac:" ) + String(gself_mac, 16)).c_str(), font_size, ST77XX_BLUE);   dy += dy_step;
     fisrt_entry = false;
   }
@@ -464,11 +464,11 @@ void loop() {
   //Logic for different node role choice via 'ROLE_SW_PIN' 
   switch (grole)
   {
-    case NODE_INITATOR:
-            
-            
+    case NodeRole::INITATOR:
+            //maybe you can do something here...
+            //no distance data return, just check the range status in initiator node in CCC mode
       break;
-    case NODE_RESPONDER:
+    case NodeRole::RESPONDER:
             if(true == uwb->get_range_status(0x0000)){
               err_cnt = 1;
               if(true == uwb->get_range_distance(0x0000, &distance)){
@@ -498,7 +498,7 @@ void loop() {
             //Some powerful and easy sync method will be added in the future
             if(err_cnt % 20 == 0){
               do{
-                uwb->range_set_session_restart(CCC_SESSION, gsession_id);
+                uwb->range_set_session_restart(SessionType::CCC, gsession_id);
                 LOG_W("Signal lost, restart the range session...");
                 delay(500);
               }while(false == uwb->get_range_status(0x0000));

@@ -4,13 +4,13 @@
   "description": "A library for Forthink ESP32 + UWB based board",
   "repository":{
     "type": "git",
-    "url": "https://github.com/forthink-xyz/Forthink_ESP32_UWB.git"
+    "url": "git@github.com:forthink-xyz/esp32-uwb-release.git"
   },
   "authors":{
         "name": "Forthink(TM)",
         "email": "support@forthink.com.cn"
    },
-  "version": "0.1.11",
+  "version": "0.2.201",
   "frameworks": "arduino",
   "platforms": "espressif32"
 }

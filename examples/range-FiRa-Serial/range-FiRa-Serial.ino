@@ -46,7 +46,7 @@ static const char *gurl            = "https://licenses.forthink.com.cn";
 static std::map<char*, uint16_t>   gdest_mac_map;     //mac address of the dest nodes which we know in advance, it's a map container, key is the name of the dest node, value is the mac address of the dest node
 static uint16_t                    gself_mac = 0x0000;// it will be set in the uwb_init function, any value is ok except 0x0000, we set it to uid for test later
 static uint64_t                    gsession_id = 0xcbc54f23;//session id for range session, it's would be better to use a random number, here we use a fixed number for test
-static uint8_t                     grole       = NODE_RESPONDER;//node role, default is responder, it will be set in the role_init function, use the ROLE_SW_PIN to determine the node role
+static NodeRole                    grole       = NodeRole::RESPONDER;//node role, default is responder, it will be set in the role_init function, use the ROLE_SW_PIN to determine the node role
 static UWBHALClass                 *uwb       = NULL;//uwb object pointer
 static SPIClass                    *gspi_uwb  = NULL;//spi object pointer
 static char                        *guid      = NULL;
@@ -105,8 +105,8 @@ void role_init(void){
   //default low，   role to respondor,
   //if pull high,   set node to initator
   uint8_t state = digitalRead(ROLE_SW_PIN);
-  grole = (state == HIGH) ? NODE_INITATOR : NODE_RESPONDER;
-  const char* pinfo = (grole == NODE_INITATOR) ? "Initator":"Responder";
+  grole = (state == HIGH) ? NodeRole::INITATOR : NodeRole::RESPONDER;
+  const char* pinfo = (grole == NodeRole::INITATOR) ? "Initator":"Responder";
   LOG_I("set node role to [%s]", pinfo);
 }
 
@@ -250,7 +250,7 @@ void uwb_init(void){
   //Use the node role to determine the mac address
   //Self mac address is the last two bytes of the self uid while dest mac address is the last two bytes of the dest nodes uid which you know in advance
   //Here we set the dest mac address hard coded manually for test
-  if(NODE_INITATOR == grole){
+  if(NodeRole::INITATOR == grole){
     gself_mac = MAC_INITOR; 
     //when we say dest mac in initator role, it means the mac address of the responder, it's multiple destination mac address
     gdest_mac_map["responder1"] =  MAC_RESPOR_1; 
@@ -269,11 +269,11 @@ void uwb_init(void){
   //Sequence of uwb range setup if the api of uwb device is activated successfully
   bool sta = true;
   sta &= uwb->range_set_session_role(grole);
-  sta &= uwb->range_set_session_param_default(FIRA_SESSION);
+  sta &= uwb->range_set_session_param_default(SessionType::FIRA);
   sta &= uwb->range_set_session_tx_power(14);
   sta &= uwb->range_set_session_self_mac((uint8_t*)&gself_mac, sizeof(gself_mac)/sizeof(uint8_t));
   sta &= uwb->range_set_session_dest_mac_list(gdest_mac_map);
-  sta &= uwb->configuration_commit(FIRA_SESSION, gsession_id);
+  sta &= uwb->configuration_commit(SessionType::FIRA, gsession_id);
   if(false == sta){
     while(true){
       LOG_E("UWB range setup failed!");
@@ -322,7 +322,7 @@ void loop() {
   //Logic for different node role choice via 'ROLE_SW_PIN' 
   switch (grole)
   {
-    case NODE_INITATOR:
+    case NodeRole::INITATOR:
             for(auto mac = gdest_mac_map.begin(); mac != gdest_mac_map.end(); mac++){
               responder_mac = mac->second;
               if(true == uwb->get_range_status(responder_mac)){
@@ -332,7 +332,7 @@ void loop() {
               }
             }
       break;
-    case NODE_RESPONDER:
+    case NodeRole::RESPONDER:
             initator_mac = gdest_mac_map["initator"];
             if(true == uwb->get_range_status(initator_mac)){
               err_cnt = 1;
@@ -348,7 +348,7 @@ void loop() {
             //Some powerful and easy sync method will be added in the future
             if(err_cnt % 20 == 0){
               do{
-                uwb->range_set_session_restart(FIRA_SESSION, gsession_id);
+                uwb->range_set_session_restart(SessionType::FIRA, gsession_id);
                 delay(500);
               }while(false == uwb->get_range_status(initator_mac));
               err_cnt++;//avoid the infinite loop, add 1 to err_cnt
