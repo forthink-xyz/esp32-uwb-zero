@@ -1,0 +1,49 @@
+#######################################
+# Syntax Coloring Map For Forthink_ESP32_UWB
+#######################################
+
+#######################################
+# Library (KEYWORD3)
+#######################################
+
+Heltec		KEYWORD3
+FOrthink	KEYWORD3
+
+#######################################
+# Datatypes	(KEYWORD1)
+#######################################
+
+UwbBaseClass	KEYWORD1
+UciDataClass	KEYWORD1
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+
+begin	KEYWORD2
+end	KEYWORD2
+
+init	KEYWORD2
+hardreset	KEYWORD2
+
+softreset	KEYWORD2
+activate	KEYWORD2
+get_device_info	KEYWORD2
+sessin_init	KEYWORD2
+
+sessin_common_config	KEYWORD2
+sessin_role_config	KEYWORD2
+range_start	KEYWORD2
+get_distance	KEYWORD2
+
+get_sts	KEYWORD2
+get_role	KEYWORD2
+get_uid	KEYWORD2
+transmit_uci_command	KEYWORD2
+receive_uci_message	KEYWORD2
+
+
+
+
+
+
+

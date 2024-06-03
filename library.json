@@ -1,0 +1,16 @@
+{
+  "name": "Forthink ESP32 UWB Dev-Boards",
+  "keywords": "forthink, esp32, uwb, wifi kit, oled",
+  "description": "A library for Forthink ESP32 + UWB based board",
+  "repository":{
+    "type": "git",
+    "url": "https://github.com/forthink-xyz/Forthink_ESP32_UWB.git"
+  },
+  "authors":{
+        "name": "Forthink(TM)",
+        "email": "support@forthink.com.cn"
+   },
+  "version": "0.1.11",
+  "frameworks": "arduino",
+  "platforms": "espressif32"
+}
