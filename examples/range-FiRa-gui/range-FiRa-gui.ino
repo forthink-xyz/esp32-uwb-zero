@@ -1,22 +1,18 @@
-/**
- * @file range-FiRa-Serial.ino
- * @brief This file contains the code for initializing and using the UWB (Ultra-Wideband) module to perform range measurements.
- * 
- * The code initializes the necessary components such as SPI communication, OLED display, and UWB module.
- * It also provides functions for LED control, serial communication initialization, and role determination.
- * The UWB module is activated using a license key and the range measurements are displayed on the OLED display.
- * 
- * @note This code assumes that the correct license key has been obtained and provided.
- * 
- * @author [bitpony]
- * 
- * @date [2024.04.23]
- */
 
+/**
+ * @file range-FiRa-gui.ino
+ * @brief This file contains the code for the range-FiRa-gui example.
+ * 
+ * The range-FiRa-gui example demonstrates the use of the Forthink library to perform range measurements
+ * using the FiRa UWB (Ultra-Wideband) module. It initializes the necessary components such as the OLED display,
+ * LED, SPI communication, and role switch pin. It also waits for a license from the serial port and saves it to EEPROM.
+ * The UWB module is then initialized and configured, and the UID (Unique Identifier) of the module is displayed on the OLED display.
+ * Finally, the UWB device is activated using the license, and the activation status is checked.
+ */
 #include "heltec.h"
 #include "forthink.h"
-#include <Adafruit_GFX.h>    // Core graphics library
-#include <Adafruit_ST7789.h> // Hardware-specific library for ST7789
+#include <Adafruit_GFX.h>    
+#include <Adafruit_ST7789.h> 
 #include <SPI.h>
 #include "EEPROM.h"
 
@@ -366,6 +362,13 @@ void setup() {
     uwb_init();
 }
 
+/**
+ * @brief Updates the LCD display with the given distance map.
+ * 
+ * This function updates the LCD display with the distance map provided as input. It first initializes the display if it is the first entry, and then iterates through the distance map to display the distances for each MAC address. The display includes information such as the example name, role, and self MAC address.
+ * 
+ * @param dismap A map containing MAC addresses as keys and corresponding distances as values.
+ */
 void lcd_fsm(std::map<uint64_t, uint16_t> dismap){
   static bool fisrt_entry = true;
   static uint8_t font_size = 2, dy_step = 8 * font_size;

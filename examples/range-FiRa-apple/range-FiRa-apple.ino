@@ -1,18 +1,18 @@
 /**
- * @file  range-FiRa-Serial.ino
- * @brief This file contains the code for initializing and using the UWB (Ultra-Wideband) module to perform range measurements.
+ * @file range-FiRa-apple.ino
+ * @brief This file contains the code for an Arduino sketch that demonstrates the use of the Forthink library to implement a range measurement application using the FiRa protocol.
  * 
- * The code initializes the necessary components such as SPI communication, OLED display, and UWB module.
- * It also provides functions for LED control, serial communication initialization, and role determination.
- * The UWB module is activated using a license key and the range measurements are displayed on the OLED display.
+ * The sketch includes the necessary libraries and defines various pins and constants used in the application. It also initializes the BLE server, sets up callbacks for BLE events, and handles UART RX events.
+ * The sketch includes functions to initialize and control the LED, initialize and control the OLED display, and handle the SPI communication with the UWB module.
+ * It also includes functions to wait for and save a license from the serial port, and to update and display information on the TFT display.
  * 
- * @note This code assumes that the correct license key has been obtained and provided.
+ * @note This code is part of the Forthink library examples.
+ * @note This code is intended to be used with an Arduino board and the Forthink library.
+ * @note This code assumes the presence of specific hardware components and pin configurations.
  * 
- * @author [bitpony]
- * 
- * @date [2024.04.23]
+ * @author bitpony
+ * @date Date
  */
-
 #include <BLEDevice.h>
 #include <BLEServer.h>
 #include <BLEUtils.h>
@@ -20,10 +20,9 @@
 #include "heltec.h"
 #include "forthink.h"
 #include "logger.h"
-#include <Adafruit_GFX.h>    // Core graphics library
-#include <Adafruit_ST7789.h> // Hardware-specific library for ST7789
+#include <Adafruit_GFX.h>    
+#include <Adafruit_ST7789.h> 
 #include "EEPROM.h"
-
 
 using namespace ftlib;
 using namespace std;
@@ -46,12 +45,8 @@ using namespace std;
 #define TFT_SCL        47
 #define TFT_CS         21
 
-
-
 #define LICENCE_SIZE   128
 #define EEPROM_SIZE    LICENCE_SIZE
-
-
 
 #define TFT_BACK_COLOR  ST77XX_BLACK
 
@@ -81,22 +76,21 @@ static NearByClass                    *nearbyobj = NULL;
 static char                           glicense[LICENCE_SIZE + 1] = {0,};// 128 characters license, the last character is '\0', so 129 bytes in total
 
 /**
- * @brief The license key used for uwb module.
- *
- * This variable stores the license key used in the code. It is a character pointer that points to a string representation of the license key.
+ * @brief Callbacks for BLE server events.
+ * 
+ * This class provides callbacks for BLE server events such as device connection and disconnection.
  */
 class BleServerCallbacks: public BLEServerCallbacks {
-    void onConnect(BLEServer* pServer) {
-        LOG_I("Device connected! ");
-    }
-    void onDisconnect(BLEServer* pServer) {
-        nearbyobj->set_oob_phone_uwb_stop_phase();
-        delay(500); // give the bluetooth stack the chance to get things ready
-        LOG_W("Device disconnected! advertising...");
-        pServer->startAdvertising(); 
-    }
+  void onConnect(BLEServer* pServer) {
+    LOG_I("Device connected! ");
+  }
+  void onDisconnect(BLEServer* pServer) {
+    nearbyobj->set_oob_phone_uwb_stop_phase();
+    delay(500); // give the bluetooth stack the chance to get things ready
+    LOG_W("Device disconnected! advertising...");
+    pServer->startAdvertising(); 
+  }
 };
-
 /**
  * @brief Callback class for handling UART RX events.
  * 
@@ -110,7 +104,16 @@ class UartRxCallBack: public BLECharacteristicCallbacks {
       nearbyobj->handle_rx_stream(rxValue);
     }
 };
-
+/**
+ * Callback function for transmitting out-of-band data.
+ * 
+ * This function is called when out-of-band data needs to be transmitted.
+ * It sets the value of the pTxCharacteristic with the provided data and length,
+ * and then notifies the characteristic to send the data.
+ * 
+ * @param data Pointer to the data to be transmitted.
+ * @param len Length of the data to be transmitted.
+ */
 void ni_oob_tx_callback(uint8_t *data, uint8_t len){
   if(pTxCharacteristic == NULL) {
     LOG_E("pTxCharacteristic is NULL");
@@ -119,7 +122,6 @@ void ni_oob_tx_callback(uint8_t *data, uint8_t len){
   pTxCharacteristic->setValue(data, len);
   pTxCharacteristic->notify();
 }
-
 /**
  * Initializes the LED pin.
  */
@@ -127,7 +129,6 @@ void led_init(void){
   pinMode(LED_PIN,OUTPUT);
   digitalWrite(LED_PIN, LOW);
 }
-
 /**
  * Function to control the LED using a finite state machine.
  */
@@ -137,7 +138,6 @@ void led_fsm(void){
   else lsta = false;
   digitalWrite(LED_PIN, lsta);
 }
-
 /**
  * Initializes the OLED display.
  * Turns on the Vext pin, waits for 100 milliseconds, and then initializes the display.
@@ -152,7 +152,6 @@ void lcd_init(void) {
   tft->setRotation(1); 
   tft->fillScreen(TFT_BACK_COLOR);
 }
-
 /**
  * Draws text on the TFT display at the specified coordinates.
  *
@@ -170,7 +169,15 @@ void tft_drawtext(int16_t x, int16_t y, char *text, uint8_t size = 1 ,uint16_t c
   tft->setTextSize(size);//Desired text size. 1 is default 6x8, 2 is 12x16, 3 is 18x24, etc
   tft->println(text);
 }
-
+/**
+ * @brief Updates the TFT display with the range data.
+ * 
+ * This function updates the TFT display with the range data received from the UWB device.
+ * It displays the role, MAC address, and distance information for each device in the range.
+ * 
+ * @param dismap A map containing the MAC addresses and distances of the devices in the range.
+ * @param header_refresh Flag indicating whether to refresh the header information.
+ */
 void lcd_fsm(std::map<uint64_t, uint16_t> dismap, bool header_refresh){
   static uint8_t font_size = 2, dy_step = 8 * font_size;
   static int16_t dx = 1, dy = 1;
@@ -192,20 +199,20 @@ void lcd_fsm(std::map<uint64_t, uint16_t> dismap, bool header_refresh){
     tft_drawtext(header.length()*6*font_size, dy + dy_t, (char*)(String(distance) + String("cm")).c_str(), font_size, ST77XX_GREEN); dy_t += dy_step;
   }
 }
-
+/**
+ * Clears the LCD screen by filling it with the background color.
+ */
 void lcd_clear(){
   if (tft != NULL)
     tft->fillScreen(TFT_BACK_COLOR);
 }
-
 /**
  * Initializes the serial communication and prints the ESP32 Chip ID.
  */
 void serial_init(void){
 	Serial.begin(115200);
 }
-
-/**
+/** 
  * @brief Initializes the SPI communication for the UWB module.
  * 
  * This function initializes two instances of the SPIClass attached to VSPI respectively.
@@ -225,7 +232,43 @@ void spi_init(void){
   //set up slave select pins as outputs as the Arduino API
   pinMode(gspi_lcd->pinSS(), OUTPUT); 
 }
+/**
+ * Initializes the BLE functionality and sets up the BLE server and service.
+ * 
+ * @param name The name to be displayed for the BLE device.
+ */
+void ble_init(char* name){
+   // Create the BLE Device
+  BLEDevice::init("uwb zero (" + String(name) + ")");
 
+  // Create the BLE Server
+  pServer = BLEDevice::createServer();
+  pServer->setCallbacks(new BleServerCallbacks());
+  // Create the BLE Service
+
+  /*********************************Nordic UART Service***********************************/
+  nusService = pServer->createService(NUS_SERVICE_UUID);
+  // Create a BLE Characteristic
+  pTxCharacteristic = nusService->createCharacteristic(
+                    NUS_CHARACTERISTIC_UUID_TX,
+                    BLECharacteristic::PROPERTY_NOTIFY
+                  );
+  pTxCharacteristic->addDescriptor(new BLE2902());
+
+  pRxCharacteristic = nusService->createCharacteristic(
+                      NUS_CHARACTERISTIC_UUID_RX,
+                      BLECharacteristic::PROPERTY_WRITE | BLECharacteristic::PROPERTY_WRITE_NR
+                    );
+  pRxCharacteristic->setCallbacks(new UartRxCallBack());
+  // Start the service
+  nusService->start();
+
+  //add the service UUID to the advertising data
+  pServer->getAdvertising()->addServiceUUID(NUS_SERVICE_UUID);
+  // Start advertising
+  pServer->getAdvertising()->start();
+
+}
 /**
  * Waits for a license from the serial port and saves it to EEPROM.
  * 
@@ -264,7 +307,6 @@ bool license_wait_and_save_from_serial(char* plic){
     }
   return true;
 }
-
 /**
  * @brief Try to loads the license from EEPROM , or wait for a new license from serial port.
  * 
@@ -309,7 +351,6 @@ void license_load(OUT char* plic, IN bool flush = false){
       }
   }
 }
-
 /**
  * @brief Initializes the UWB (Ultra-Wideband) module and performs necessary configurations.
  * 
@@ -341,10 +382,14 @@ void uwb_init(void){
   uwb->begin(UWB_RST_PIN, UWB_SPI_SS, UWB_INT_PIN, UWB_RDY_PIN);
   guid = uwb->dev_get_uid();
 
-  //load the license from EEPROM, if not exist, wait from serial port
+
+
+  /***************************load the license from EEPROM, if not exist, wait from serial port**************************/
   license_load(glicense, false);
   //uwb module may goto sleep mode(default 500ms), so we need to reset it to wake up after license load
   uwb->hardware_reset();
+
+
 
 
   //try to activate the uwb device with a license provided above
@@ -375,9 +420,8 @@ void uwb_init(void){
       }
     }
 }
-
 /**
- * @brief Starts the ni (NearBy) session.
+ * @brief Starts the ni (NearBy) application and initializes the UWB device with the necessary parameters
  * 
  * This function initializes the ni session and configures the UWB device with the necessary parameters
  * received from the iPhone. It waits for the configuration data from the iPhone and sets up the UWB
@@ -404,40 +448,14 @@ void ni_start(){
       delay(1000);
     }
   }
-
-  // NINearbyShareableData_t PhoneShareableData = nearbyobj->get_shareable_data();
-  //Sequence of ni configuration
+  
+  //Sequence of nearby interaction configuration
   bool sta = true;
-
-  uint16_t dest_mac = nearbyobj->get_shareable_dest_address();
-
   sta &= uwb->range_set_session_role(grole);
-
   sta &= uwb->range_set_session_tx_power(14);
-
   sta &= uwb->range_set_session_self_mac((uint8_t*)&gself_mac, sizeof(gself_mac)/sizeof(uint8_t));
-
-  sta &= uwb->range_set_session_preamble_code_index(nearbyobj->get_shareable_code_index());
-
-  sta &= uwb->range_set_session_channel_number(nearbyobj->get_shareable_channel_number());  
-
-  sta &= uwb->range_set_session_slots_per_rr(nearbyobj->get_shareable_slots_per_rr());
-
-  sta &= uwb->range_set_session_slot_duration(nearbyobj->get_shareable_slot_duration());
-
-  sta &= uwb->range_set_session_ranging_interval(nearbyobj->get_shareable_ranging_interval());
-
-  sta &= uwb->range_set_session_ranging_round_control(nearbyobj->get_shareable_ranging_round_control());
-
-  sta &= uwb->range_set_session_sts_init_iv(nearbyobj->get_shareable_sts_init_iv());
-
-  sta &= uwb->range_set_session_multi_node(nearbyobj->get_shareable_multi_node());
-
-  sta &= uwb->range_set_session_vendor_id(nearbyobj->get_shareable_vendor_id());
-
-  sta &= uwb->range_set_session_dest_mac_list((uint8_t*)(&dest_mac), 2);
-
-  sta &= uwb->configuration_commit(SessionType::FIRA, nearbyobj->get_shareable_session_id());
+  sta &= uwb->range_set_nearby_param_default(nearbyobj->get_shareable_data());
+  sta &= uwb->configuration_commit(SessionType::FIRA, nearbyobj->get_session_id());
 
   if(false == sta){
     while(true){
@@ -445,47 +463,8 @@ void ni_start(){
       delay(1000);
     }
   }
-  uwb->range_set_session_start(nearbyobj->get_shareable_session_id());
+  uwb->range_set_session_start(nearbyobj->get_session_id());
 }
-
-/**
- * Initializes the BLE functionality and sets up the BLE server and service.
- * 
- * @param name The name to be displayed for the BLE device.
- */
-void ble_init(char* name){
-   // Create the BLE Device
-  BLEDevice::init("uwb zero (" + String(name) + ")");
-
-  // Create the BLE Server
-  pServer = BLEDevice::createServer();
-  pServer->setCallbacks(new BleServerCallbacks());
-  // Create the BLE Service
-
-  /*********************************Nordic UART Service***********************************/
-  nusService = pServer->createService(NUS_SERVICE_UUID);
-  // Create a BLE Characteristic
-  pTxCharacteristic = nusService->createCharacteristic(
-                    NUS_CHARACTERISTIC_UUID_TX,
-                    BLECharacteristic::PROPERTY_NOTIFY
-                  );
-  pTxCharacteristic->addDescriptor(new BLE2902());
-
-  pRxCharacteristic = nusService->createCharacteristic(
-                      NUS_CHARACTERISTIC_UUID_RX,
-                      BLECharacteristic::PROPERTY_WRITE | BLECharacteristic::PROPERTY_WRITE_NR
-                    );
-  pRxCharacteristic->setCallbacks(new UartRxCallBack());
-  // Start the service
-  nusService->start();
-
-  //add the service UUID to the advertising data
-  pServer->getAdvertising()->addServiceUUID(NUS_SERVICE_UUID);
-  // Start advertising
-  pServer->getAdvertising()->start();
-
-}
-
 /**
  * @brief Initializes the setup for the UWB range-FiRa example.
  * 
@@ -503,17 +482,13 @@ void setup() {
     ble_init(guid);
     ni_start();
 }
-
 /**
  * @brief The main loop function that runs repeatedly in the Arduino sketch.
  * 
  * This function is responsible for executing the main logic of the program.
- * It listens for range data and performs different actions based on the role of the node.
- * If the node is an initiator, it retrieves range data from all responder nodes and stores it in the `dismap` map.
- * If the node is a responder, it retrieves range data from the initiator node and stores it in the `dismap` map.
- * If the signal seems lost (based on the value of `err_cnt`), the function restarts the range session and increments `err_cnt`.
- * If the node role is unknown, an error message is logged.
- * The function also calls the `led_fsm` function and adds a small delay of 1 millisecond.
+ * It initializes the LCD display, listens for data from the UWB device, and updates the LCD display with the range data.
+ * If the range status is not available or an error occurs, it clears the range data, waits for the configuration from the iPhone, and initializes the UWB device again.
+ * It also controls the LED state.
  */
 void loop() {
   static uint16_t err_cnt = 0, distance = 0;
@@ -526,10 +501,10 @@ void loop() {
     first_in = false;
   }
 
-  // //listen data from uwb device, including range data, status, etc.
+  //listen data from uwb device, including range data, status, etc.
   uwb->ntf_listening();
 
-  uint16_t phoneMac = nearbyobj->get_shareable_dest_address();
+  uint16_t phoneMac = nearbyobj->get_phone_address();
   if(true == uwb->get_range_status(phoneMac)){
     if(true == uwb->get_range_distance(phoneMac, &distance)){
       dismap[phoneMac] = distance;
