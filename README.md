@@ -28,7 +28,7 @@
 
 
 # Hardware requirements
-- Arduino board base on esp32, such as board from Heltec.
+- Arduino board base on esp32, such as board from ```Heltec```.
 - UWB module with standard uci base on FiRa.
 
 # Examples 

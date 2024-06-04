@@ -13,7 +13,7 @@
 #include <cstring>
 
 //TODO : disable in Arduino IDE
-#define LOG_COLOR_ENABLE
+//#define LOG_COLOR_ENABLE
 
 namespace dbg
 {

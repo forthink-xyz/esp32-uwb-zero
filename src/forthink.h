@@ -24,8 +24,6 @@
 #include <SPI.h>
 #include <map>
 
-
-
 /**
  * @brief The role of the node.
  * 
@@ -51,12 +49,144 @@ enum class SessionType{
 
 
 
+
 namespace ftlib{
+
 #define IN
 #define OUT
 const char* get_lib_version();
-class SPIPortClass;
 
+
+struct NINearbyShareableData;
+enum class NINearbyMessageId;
+
+/**
+ * @class NearByClass
+ * @brief Represents a class for handling nearby communication.
+ *
+ * The NearByClass class provides methods for managing nearby communication, including
+ * initializing the class, getting and setting the out-of-band (OOB) phase, handling
+ * received data streams, and retrieving shareable data.
+ */
+class NearByClass{
+public:
+    NearByClass(NodeRole devrole , uint16_t devmac, void (*oob_tx_cb)(uint8_t *data, uint8_t len));
+
+    ~NearByClass();
+
+    /**
+     * @brief Handles the received stream of data.
+     *
+     * This function is responsible for processing the received stream of data.
+     * It takes a String parameter `rx_stream` which represents the received stream.
+     * 
+     * @param rx_stream The received stream of data to be processed.
+     */
+    void  handle_rx_stream(String rx_stream);
+
+    NINearbyShareableData* get_shareable_data();
+
+    /**
+     * @brief Retrieves the shareable destination address.
+     *
+     * This function returns the shareable destination address as a 16-bit unsigned integer.
+     *
+     * @return The shareable destination address.
+     */
+    uint16_t get_phone_address();
+
+    /**
+     * @brief Retrieves the shareable session ID.
+     *
+     * This function returns a 16-bit unsigned integer representing the shareable session ID.
+     *
+     * @return The shareable session ID.
+     */
+    uint16_t get_session_id();
+
+    /**
+     * @brief Retrieves the out-of-band phase.
+     * 
+     * This function returns the out-of-band phase as a uint8_t value.
+     * 
+     * @return The out-of-band phase as a uint8_t value.
+     */
+    uint8_t  get_oob_phase();
+
+    /**
+     * Sets the out-of-band (OOB) phone UWB stop phase.
+     * 
+     * This function is responsible for setting the UWB stop phase for the out-of-band (OOB) phone.
+     * 
+     * @return true if the UWB stop phase was successfully set, false otherwise.
+     */
+    bool set_oob_phone_uwb_stop_phase();
+
+    /**
+     * Checks if the out-of-band (OOB) phone UWB initialization phase is ongoing.
+     *
+     * @return true if the OOB phone UWB initialization phase is ongoing, false otherwise.
+     */
+    bool is_oob_phone_uwb_init_phase();
+
+    /**
+     * Checks if the out-of-band (OOB) phone UWB start phase is active.
+     * 
+     * @return true if the OOB phone UWB start phase is active, false otherwise.
+     */
+    bool is_oob_phone_uwb_start_phase();
+
+    /**
+     * Checks if the OOB phone UWB stop phase is active.
+     *
+     * @return true if the OOB phone UWB stop phase is active, false otherwise.
+     */
+    bool is_oob_phone_uwb_stop_phase();
+
+private:
+    NodeRole  dev_role;
+    uint16_t  dev_mac;
+    /**
+     * Sets the out-of-band (OOB) phase.
+     *
+     * This function sets the out-of-band phase to the specified value.
+     *
+     * @param phase The value of the out-of-band phase to set.
+     */
+    void      set_oob_phase(uint8_t phase);
+    /**
+     * @brief Function pointer for out-of-band transmission.
+     *
+     * This function pointer is used to transmit data out-of-band.
+     * It takes a pointer to the data and the length of the data as parameters.
+     *
+     * @param data Pointer to the data to be transmitted.
+     * @param len Length of the data.
+     */
+    void      (*oob_tx)(uint8_t *data, uint8_t len);
+
+    /**
+     * @brief Represents the identifier for a nearby message.
+     * 
+     * This class is used to uniquely identify a nearby message in the Forthink library.
+     * It is typically used in conjunction with other classes and functions to perform
+     * operations related to nearby messages.
+     */
+    NINearbyMessageId oobConfiguredPhase;
+
+    /**
+     * @brief Type definition for nearby shareable data.
+     * 
+     * This type represents the data that can be shared using nearby sharing feature.
+     * It is used to store the shareable data received from the phone.
+     */
+    NINearbyShareableData*  shareable_data_from_phone = NULL;
+};
+
+
+
+
+class SPIPortClass;
 /**
  * @class UWBHALClass
  * @brief This class represents the UWB Hardware Abstraction Layer (HAL).
@@ -114,6 +244,14 @@ class UWBHALClass{
              * @return True if the default session parameter was successfully set, false otherwise.
              */
             bool range_set_session_param_default(IN SessionType session_type);
+
+            /**
+             * Sets the nearby parameter default for range, NearBy application base on FiRa mode.
+             *
+             * @param shareable_data The nearby shareable data from iPhone
+             * @return True if the nearby parameter default for range is set successfully, false otherwise.
+             */
+            bool range_set_nearby_param_default(IN NINearbyShareableData* shareable_data);
 
             /**
              * Sets the session preamble code index for the range.
@@ -316,7 +454,6 @@ class UWBHALClass{
              */
             bool range_set_session_start(IN uint32_t session_id);
 
-
             /**
              * Retrieves the range status for a given MAC address. FiRa only.
              *
@@ -334,7 +471,6 @@ class UWBHALClass{
              * @return True if the range distance was successfully retrieved, false otherwise.
              */
             bool get_range_distance(IN uint64_t mac, OUT uint16_t *dist);
-
 
             /**
              * @brief Commits the configuration changes for a specific session.
@@ -362,200 +498,7 @@ class UWBHALClass{
              * @return true if the firmware update is successful, false otherwise.
              */
             bool dev_fw_update(void);
-    };
-}
-
-
-struct NINearbyShareableData;
-typedef NINearbyShareableData* NINearbyShareableData_t;
-enum class NINearbyMessageId;
-
-/**
- * @class NearByClass
- * @brief Represents a class for handling nearby communication.
- *
- * The NearByClass class provides methods for managing nearby communication, including
- * initializing the class, getting and setting the out-of-band (OOB) phase, handling
- * received data streams, and retrieving shareable data.
- */
-class NearByClass{
-public:
-    NearByClass(NodeRole devrole , uint16_t devmac, void (*oob_tx_cb)(uint8_t *data, uint8_t len));
-    ~NearByClass();
-
-    /**
-     * @brief Handles the received stream of data.
-     *
-     * This function is responsible for processing the received stream of data.
-     * It takes a String parameter `rx_stream` which represents the received stream.
-     * 
-     * @param rx_stream The received stream of data to be processed.
-     */
-    void  handle_rx_stream(String rx_stream);
-
-    /**
-     * @brief Retrieves the index of the shareable code.
-     * 
-     * This function returns the index of the shareable code.
-     * 
-     * @return The index of the shareable code.
-     */
-    uint8_t get_shareable_code_index();
-
-    /**
-     * @brief Retrieves the shareable channel number.
-     * 
-     * This function returns the shareable channel number as a uint8_t value.
-     * The shareable channel number is used for communication purposes.
-     * 
-     * @return The shareable channel number.
-     */
-    uint8_t get_shareable_channel_number();
-
-    /**
-     * Retrieves the number of shareable slots per round-robin.
-     *
-     * @return The number of shareable slots per round-robin.
-     */
-    uint8_t get_shareable_slots_per_rr();
-
-    /**
-     * Retrieves the duration of a shareable slot.
-     *
-     * @return The duration of a shareable slot in milliseconds.
-     */
-    uint16_t get_shareable_slot_duration();
-
-    /**
-     * Retrieves the shareable ranging interval.
-     *
-     * @return The shareable ranging interval as a 16-bit unsigned integer.
-     */
-    uint16_t get_shareable_ranging_interval();
-
-    /**
-     * @brief Retrieves the shareable ranging round control value.
-     *
-     * This function returns the shareable ranging round control value, which is a uint8_t.
-     * The shareable ranging round control value determines the behavior of the ranging round.
-     *
-     * @return The shareable ranging round control value.
-     */
-    uint8_t get_shareable_ranging_round_control();
-
-    /**
-     * @brief Retrieves the shareable initialization vector (IV) for the sts_init function.
-     * 
-     * @return A pointer to the shareable initialization vector.
-     */
-    uint8_t* get_shareable_sts_init_iv();
-
-    /**
-     * @brief Retrieves the shareable multi-node value.
-     * 
-     * This function returns the shareable multi-node value as a uint8_t.
-     * 
-     * @return The shareable multi-node value.
-     */
-    uint8_t get_shareable_multi_node();
-
-    /**
-     * @brief Retrieves the shareable vendor ID.
-     *
-     * This function returns the shareable vendor ID as a 16-bit unsigned integer.
-     *
-     * @return The shareable vendor ID.
-     */
-    uint16_t get_shareable_vendor_id();
-
-    /**
-     * @brief Retrieves the shareable destination address.
-     *
-     * This function returns the shareable destination address as a 16-bit unsigned integer.
-     *
-     * @return The shareable destination address.
-     */
-    uint16_t get_shareable_dest_address();
-
-    /**
-     * @brief Retrieves the shareable session ID.
-     *
-     * This function returns a 16-bit unsigned integer representing the shareable session ID.
-     *
-     * @return The shareable session ID.
-     */
-    uint16_t get_shareable_session_id();
-
-    /**
-     * @brief Retrieves the out-of-band phase.
-     * 
-     * This function returns the out-of-band phase as a uint8_t value.
-     * 
-     * @return The out-of-band phase as a uint8_t value.
-     */
-    uint8_t  get_oob_phase();
-
-    /**
-     * Sets the out-of-band (OOB) phone UWB stop phase.
-     * 
-     * This function is responsible for setting the UWB stop phase for the out-of-band (OOB) phone.
-     * 
-     * @return true if the UWB stop phase was successfully set, false otherwise.
-     */
-    bool set_oob_phone_uwb_stop_phase();
-
-    /**
-     * Checks if the out-of-band (OOB) phone UWB initialization phase is ongoing.
-     *
-     * @return true if the OOB phone UWB initialization phase is ongoing, false otherwise.
-     */
-    bool is_oob_phone_uwb_init_phase();
-
-    /**
-     * Checks if the out-of-band (OOB) phone UWB start phase is active.
-     * 
-     * @return true if the OOB phone UWB start phase is active, false otherwise.
-     */
-    bool is_oob_phone_uwb_start_phase();
-
-    /**
-     * Checks if the OOB phone UWB stop phase is active.
-     *
-     * @return true if the OOB phone UWB stop phase is active, false otherwise.
-     */
-    bool is_oob_phone_uwb_stop_phase();
-
-private:
-    NodeRole  dev_role;
-    uint16_t  dev_mac;
-    /**
-     * Sets the out-of-band (OOB) phase.
-     *
-     * This function sets the out-of-band phase to the specified value.
-     *
-     * @param phase The value of the out-of-band phase to set.
-     */
-    void      set_oob_phase(uint8_t phase);
-    /**
-     * @brief Function pointer for out-of-band transmission.
-     *
-     * This function pointer is used to transmit data out-of-band.
-     * It takes a pointer to the data and the length of the data as parameters.
-     *
-     * @param data Pointer to the data to be transmitted.
-     * @param len Length of the data.
-     */
-    void      (*oob_tx)(uint8_t *data, uint8_t len);
-
-    /**
-     * @brief Represents the identifier for a nearby message.
-     * 
-     * This class is used to uniquely identify a nearby message in the Forthink library.
-     * It is typically used in conjunction with other classes and functions to perform
-     * operations related to nearby messages.
-     */
-    NINearbyMessageId oobConfiguredPhase;
-    NINearbyShareableData_t  shareable_data_from_phone = NULL;
-};
+    };//class UWBHALClass
+}//namespace ftlib
 
 #endif
