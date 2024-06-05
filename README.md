@@ -187,14 +187,6 @@ git clone git@github.com:forthink-xyz/esp32-uwb-zero.git
 ```Note1:``` Range data transfer via mqtt broker, you can build a broker by yourself and calculate the position through TOF algorithm.
 
 # 9. Release log
-## (2024.06.**) - v0.2.103
-  
-- Features:
-  - eeee
-- Fixed:
-  - vvvvv
-- Add:
-  - wwwww
 ## (2024.06.05) - v0.2.102
   
 - Features:
