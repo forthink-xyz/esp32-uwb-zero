@@ -58,8 +58,8 @@ git clone git@github.com:forthink-xyz/esp32-uwb-zero.git
 
 
 
-## 8.Usages
-- ### 8.1 range-FiRa-apple
+# 8.Usages
+- ## 8.1 range-FiRa-apple
 
 | Hardware requirments    |  Quantity requirments   | Range mode |
 | :---------------------- | :-----------------: | :-----------------: |
@@ -83,7 +83,7 @@ git clone git@github.com:forthink-xyz/esp32-uwb-zero.git
 ```Note2:``` Change nothing in source code ```range-FiRa-apple.ino```, just flushing firmware to the board directly.
 
 
-- ### 8.2 range-FiRa-gui
+- ## 8.2 range-FiRa-gui
 
 | Hardware requirments    |  Quantity requirments   | Range mode |
 | :---------------------- | :-----------------: | :-----------------: |
@@ -108,7 +108,7 @@ git clone git@github.com:forthink-xyz/esp32-uwb-zero.git
    
    ```
 
-  - Modify 2 of them to fit your real mac, just as below, I change MAC_RESPOR_1 and MAC_RESPOR_2 to 0xab44, 0xab33 here :
+  - Modify 2 of them to fit your real mac, just as below, I change `MAC_RESPOR_1` and `MAC_RESPOR_2` to `0xab44`, `0xab33` here :
    ```
    
    static const uint16_t MAC_RESPOR_1 = 0xab44;//Respondors around the initiator which mac address is known in advance，let initator know the mac address of the responder
@@ -120,25 +120,25 @@ git clone git@github.com:forthink-xyz/esp32-uwb-zero.git
 
   - Flush the same firmware to board ```0xab44``` and  ```0xab33```.
    
-  - Assume that  ```0xab44``` as Initator, ```0xab33``` as responder.
+  - Assume that  ```0xab44``` as Initator, ```0xab33``` as responder, GPIO35 is a switch for the node role. 
    
-  - For board ```0xab44``` , short GPIO35 to 3.3v, in order to make some convenient to debug, initator has a fixed mac 0xabcd actually.
+  - For board ```0xab44``` , short GPIO35 to 3.3v (in order to make some convenient to debug, initator has a fixed mac as 0xabcd actually).
    
   - For board ```0xab33``` , let GPIO35 floating.
 
   - Finally, Power board ```0xab44``` and board ```0xab33``` on, something that you expected will display on the LCD hopefully.
 
-- ### 8.3 range-FiRa-Serial
+- ## 8.3 range-FiRa-Serial
 
   Same as `range-FiRa-gui` tutorial, `range-FiRa-Serial` have no LCD and log the range information through serial port.
 
-- ### 8.4 rtls-ccc-gui
+- ## 8.4 rtls-ccc-gui
 
 | Hardware requirments    |  Quantity requirments   | Range mode | 
 | :---------------------- | :-----------------: | :-----------------: |
 |```ESP32-UWB zero``` with ```rtls-ccc-gui``` firmware  | At least 4 units| SS-TWR |
 
-- #### Assume that there are 4 ```ESP32-UWB zero``` units you have got already, 1 node as initator and 3 nodes as responder.
+- #### Assume that there are 4 ```ESP32-UWB zero``` units you have got already, let 1 node as initator while other 3 nodes as responder.
   
   - For initator, we only modify the definition as below：
   
@@ -156,21 +156,8 @@ git clone git@github.com:forthink-xyz/esp32-uwb-zero.git
    static const uint16_t   REPONDER_INDEX = n;//the index of this responder node in the network
    
    ```
-
-```Note1:``` We have to modify the `REPONDER_INDEX` manually for each reponder， such as n = 0,1,2
-
-```Note2:``` Range data transfer via Wifi to a mqtt broker, you can build a broker by yourself and calculate the position through TOF algorithm.
-
-
-- ### 8.5 rtls-FiRa-gui
-
-| Hardware requirments    |  Quantity requirments   | Range mode |
-| :---------------------- | :-----------------: | :-----------------: |
-|```ESP32-UWB zero``` with ```rtls-FiRa-gui``` firmware  | At least 4 units| DS-TWR |
-
-- Same as ```range-FiRa-gui``` tutorial, ```rtls-FiRa-gui``` require 4 units at least, so you have left 4 definitions there and just modify the mac address to fit your environment.
-
-   - Additional, modify the parameters of Wifi connection and mqtt broker as below：
+ 
+   - Additional, for responder role, modify the parameters of Wifi connection and mqtt broker as below：
 
    ```
    static char*            WIFI_SSID   = "HGKJ";
@@ -182,10 +169,30 @@ git clone git@github.com:forthink-xyz/esp32-uwb-zero.git
    ```
 
 
+```Note1:``` We have to modify the `REPONDER_INDEX` manually for each reponder， such as n = 0,1,2
+
+```Note2:``` Range data transfer via Wifi to a mqtt broker, you can build a broker by yourself and calculate the position through TOF algorithm.
 
 
-     
-  
+- ## 8.5 rtls-FiRa-gui
+
+| Hardware requirments    |  Quantity requirments   | Range mode |
+| :---------------------- | :-----------------: | :-----------------: |
+|```ESP32-UWB zero``` with ```rtls-FiRa-gui``` firmware  | At least 4 units| DS-TWR |
+
+- #### Same as ```range-FiRa-gui``` tutorial, ```rtls-FiRa-gui``` require 4 units at least, let 1 node as initator while other 3 nodes as responder.
+
+   - Additional, for responder role, modify the parameters of Wifi connection and mqtt broker as below：
+
+   ```
+   static char*            WIFI_SSID   = "HGKJ";
+   static char*            WIFI_PSWD   = "HGKJ2014";
+   static String           TopicUp     = "forthink/uwb/up/";
+   static String           TopicDown   = "forthink/uwb/down/";
+   static const char*      MQTT_BROKER = "esp32.bitpony.xyz";
+   static const uint16_t   MQTT_PORT   = 1883;
+   ```
+
 ```Note1:``` Range data transfer via mqtt broker, you can build a broker by yourself and calculate the position through TOF algorithm.
 
 # 9. Release log
