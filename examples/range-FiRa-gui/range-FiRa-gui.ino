@@ -52,8 +52,8 @@ static const int  spiClk           = 10*1000*1000;
 static const char *gurl            = "https://licenses.forthink.com.cn";
 static char       *guid            = NULL;
 
-static std::map<char*, uint16_t>   g_dest_mac_map;          //mac address of the dest nodes which we know in advance, it's a map container, key is the name of the dest node, value is the mac address of the dest node
-static uint16_t                    g_self_mac  = 0x0000;    // it will be set in the uwb_init function, any value is ok except 0x0000, we set it to uid for test later
+static std::map<char*, uint16_t>   gdest_mac_map;          //mac address of the dest nodes which we know in advance, it's a map container, key is the name of the dest node, value is the mac address of the dest node
+static uint16_t                    gself_mac   = 0x0000;    // it will be set in the uwb_init function, any value is ok except 0x0000, we set it to uid for test later
 static uint64_t                    gsession_id = 0xcbc54f23;//session id for range session, it's would be better to use a random number, here we use a fixed number for test
 static NodeRole                    grole       = NodeRole::RESPONDER;//node role, default is responder, it will be set in the role_init function, use the ROLE_SW_PIN to determine the node role
 
@@ -303,27 +303,27 @@ void uwb_init(void){
   String info = (grole == NodeRole::INITATOR) ? "node role:initator" : "node role:responder";
   tft_drawtext(dx , dy, (char*)info.c_str(), font_size);dy += dy_step;
   if(NodeRole::INITATOR == grole){
-    g_self_mac = MAC_INITOR; 
+    gself_mac = MAC_INITOR; 
     //when we talking about dest mac with initator role, it means the mac address of the responder, it's multiple destination mac address
-    g_dest_mac_map["responder1"] =  MAC_RESPOR_1; 
-    g_dest_mac_map["responder2"] =  MAC_RESPOR_2; 
-    g_dest_mac_map["responder3"] =  MAC_RESPOR_3; 
-    g_dest_mac_map["responder4"] =  MAC_RESPOR_4; 
+    gdest_mac_map["responder1"] =  MAC_RESPOR_1; 
+    gdest_mac_map["responder2"] =  MAC_RESPOR_2; 
+    gdest_mac_map["responder3"] =  MAC_RESPOR_3; 
+    gdest_mac_map["responder4"] =  MAC_RESPOR_4; 
 
-    tft_drawtext(dx , dy, (char*)(String("self mac:" ) + String(g_self_mac, 16)).c_str(), font_size);dy += dy_step;
-    for(auto mac = g_dest_mac_map.begin(); mac != g_dest_mac_map.end(); mac++){
+    tft_drawtext(dx , dy, (char*)(String("self mac:" ) + String(gself_mac, 16)).c_str(), font_size);dy += dy_step;
+    for(auto mac = gdest_mac_map.begin(); mac != gdest_mac_map.end(); mac++){
       uint16_t dmac = mac->second;
       tft_drawtext(dx , dy, (char*)(String("dest mac:" ) + String(dmac, 16)).c_str(), font_size);dy += dy_step;
     }
   }   
   else{
     // get the last two bytes of the uid as the self mac address
-    g_self_mac = std::stoi(guid + 4, nullptr, 16);
+    gself_mac = std::stoi(guid + 4, nullptr, 16);
     //when we say dest mac in responder role, it means the mac address of the initator, it's only one destination mac address
-    g_dest_mac_map["initator"] = MAC_INITOR;
+    gdest_mac_map["initator"] = MAC_INITOR;
 
-    uint16_t smac = g_self_mac;
-    uint16_t dmac = g_dest_mac_map["initator"];
+    uint16_t smac = gself_mac;
+    uint16_t dmac = gdest_mac_map["initator"];
     tft_drawtext(dx , dy, (char*)(String("self mac:" ) + String(smac, 16)).c_str(), font_size);dy += dy_step;
     tft_drawtext(dx , dy, (char*)(String("dest mac:" ) + String(dmac, 16)).c_str(), font_size);dy += dy_step;
   }
@@ -334,8 +334,8 @@ void uwb_init(void){
   sta &= uwb->range_set_session_role(grole);
   sta &= uwb->range_set_session_param_default(SessionType::FIRA);
   sta &= uwb->range_set_session_tx_power(14);
-  sta &= uwb->range_set_session_self_mac((uint8_t*)&g_self_mac, sizeof(g_self_mac));
-  sta &= uwb->range_set_session_dest_mac_list(g_dest_mac_map);
+  sta &= uwb->range_set_session_self_mac((uint8_t*)&gself_mac, sizeof(gself_mac));
+  sta &= uwb->range_set_session_dest_mac_list(gdest_mac_map);
   sta &= uwb->configuration_commit(SessionType::FIRA, gsession_id);
   if(false == sta){
     while(true){
@@ -377,7 +377,7 @@ void lcd_fsm(std::map<uint64_t, uint16_t> dismap){
     tft->fillScreen(TFT_BACK_COLOR);
     tft_drawtext(dx , dy, (char*)String("Example :FiRa Range").c_str(), font_size, ST77XX_BLUE);  dy += dy_step;
     tft_drawtext(dx , dy, (char*)(grole == NodeRole::INITATOR ? "Role    :Initator" : "Role    :Responder"), font_size, ST77XX_BLUE);   dy += dy_step;
-    tft_drawtext(dx , dy, (char*)(String("self mac:" ) + String(g_self_mac, 16)).c_str(), font_size, ST77XX_BLUE);   dy += dy_step;
+    tft_drawtext(dx , dy, (char*)(String("self mac:" ) + String(gself_mac, 16)).c_str(), font_size, ST77XX_BLUE);   dy += dy_step;
     fisrt_entry = false;
   }
 
@@ -414,7 +414,7 @@ void loop() {
   switch (grole)
   {
     case NodeRole::INITATOR:
-            for(auto mac = g_dest_mac_map.begin(); mac != g_dest_mac_map.end(); mac++){
+            for(auto mac = gdest_mac_map.begin(); mac != gdest_mac_map.end(); mac++){
                responder_mac = mac->second;
               if(true == uwb->get_range_status(responder_mac)){
                 if(true == uwb->get_range_distance(responder_mac, &distance)){
@@ -424,7 +424,7 @@ void loop() {
             }
       break;
     case NodeRole::RESPONDER:
-            initator_mac = g_dest_mac_map["initator"];
+            initator_mac = gdest_mac_map["initator"];
             if(true == uwb->get_range_status(initator_mac)){
               err_cnt = 1;
               if(true == uwb->get_range_distance(initator_mac, &distance)){

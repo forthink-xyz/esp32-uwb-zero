@@ -108,11 +108,13 @@ git clone git@github.com:forthink-xyz/esp32-uwb-zero.git
    
    ```
 
-  - Remove 2 of them and remain 2 suit for your environment, if you got 4 `ESP32-UWB zero` units, just remain 4 definitions here：
+  - Modify 2 of them to fit your real mac, just as below, I change MAC_RESPOR_1 and MAC_RESPOR_2 to 0xab44, 0xab33 here :
    ```
    
    static const uint16_t MAC_RESPOR_1 = 0xab44;//Respondors around the initiator which mac address is known in advance，let initator know the mac address of the responder
    static const uint16_t MAC_RESPOR_2 = 0xab33;//Respondors around the initiator which mac address is known in advance，let initator know the mac address of the responder
+   static const uint16_t MAC_RESPOR_3 = 0xfbb2;//Respondors around the initiator which mac address is known in advance，let initator know the mac address of the responder
+   static const uint16_t MAC_RESPOR_4 = 0xfbaf;//Respondors around the initiator which mac address is known in advance，let initator know the mac address of the responder
    
    ```
 
@@ -187,8 +189,17 @@ git clone git@github.com:forthink-xyz/esp32-uwb-zero.git
 ```Note1:``` Range data transfer via mqtt broker, you can build a broker by yourself and calculate the position through TOF algorithm.
 
 # 9. Release log
-## (2024.06.05) - v0.2.102
+## (2024.06.06) - v0.2.103
+- Features:
+  - None
+- Fixed:
+  - add tlv tag name echo.
+  - improve readme.md
+  - known issues fixed.
+- Add:
+  - None
   
+## (2024.06.05) - v0.2.102
 - Features:
   - Disable ANSI logger feature. (origin Arduino IDE console do not support ANSI)
 - Fixed:
